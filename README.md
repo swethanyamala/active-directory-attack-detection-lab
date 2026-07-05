@@ -53,31 +53,22 @@ Instead of showing a single isolated attack, this lab demonstrates **layered det
 
 ---
 
-## ⚔️ Stage 1 — Reconnaissance (BloodHound / SharpHound)
+## ⚔️ Stage 1 — Reconnaissance (LDAP Enumeration)
 
 ### 🔴 The Attack (Red)
-Before attacking, adversaries map the environment. **SharpHound** (BloodHound's collector) queries Active Directory over LDAP to enumerate users, groups, sessions, and privilege paths — finding the shortest route to Domain Admin.
+Before attacking, adversaries map the environment. Simulating an attacker who has already compromised a domain-joined machine, I performed reconnaissance using native Windows LDAP queries — a "living off the land" technique that needs no downloaded tools.
 
-```bash
-# Attacker runs the SharpHound collector to map the domain
-SharpHound.exe -c All -d lab.local
-```
+Using built-in PowerShell, I enumerated all domain users, groups, computers, and service accounts with SPNs (the Kerberoasting targets for Stage 2):
 
-<!-- Replace with your screenshot of SharpHound / BloodHound graph -->
-![BloodHound enumeration](images/stage1-bloodhound.png)
+​```powershell
+# Enumerate all domain users via LDAP
+([adsisearcher]"(objectClass=user)").FindAll()
 
-### 🔵 The Detection (Blue)
-SharpHound is *loud* — it generates a burst of **Event ID 4662** (operation performed on a directory object) and mass LDAP queries in a very short window. The signature isn't one event, it's the **abnormal volume and speed** of enumeration from a single host.
+# Hunt for service accounts with SPNs
+([adsisearcher]"(&(objectClass=user)(servicePrincipalName=*))").FindAll()
+​```
 
-```spl
-index=wineventlog EventCode=4662
-| bucket _time span=1m
-| stats dc(ObjectName) as objects_accessed count by _time, Account_Name, Client_Address
-| where objects_accessed > 50
-```
-
-<!-- Replace with your Splunk screenshot -->
-![Splunk recon detection](images/stage1-detection.png)
+![LDAP recon enumeration](images/stage1-recon.png)
 
 ### 🗺️ MITRE ATT&CK
 | Tactic | Technique | ID |
