@@ -44,7 +44,8 @@ Instead of one isolated attack, this lab shows layered detection across a full i
 | Splunk | SIEM (log collection + detection) |
 | VMware Workstation | Virtualization (isolated host-only network) |
 
-*Lab network diagram*
+![Lab network diagram](images/network-diagram.png)
+*Isolated host-only network: DC, endpoint, and attacker VM*
 
 ---
 
@@ -64,7 +65,22 @@ Using built-in PowerShell, I enumerated domain users, groups, computers, and —
 ([adsisearcher]"(&(objectClass=user)(servicePrincipalName=*))").FindAll()
 ```
 
-*LDAP recon enumeration*
+![LDAP recon enumeration](images/stage1-ldap-recon.png)
+*Enumerating domain users and SPN accounts via native LDAP queries*
+
+### 🔵 The Detection (Blue)
+
+The theory: LDAP reads generate Event ID 4662 when a SACL (audit rule) is set on the queried objects. I configured this end-to-end — enabled "Audit Directory Service Access" (locally and via the Default Domain Controllers GPO), set a SACL on the domain object for `Everyone`/Success covering Read/List operations, and confirmed the full pipeline (audit policy → SACL → Splunk Universal Forwarder) was working by watching an unrelated 4662 event (a Group Policy write) land in Splunk within seconds.
+
+```spl
+index=* host="WIN-AUHSOB0S2PO" EventCode=4662
+| table _time Account_Name SubjectUserName ObjectName Accesses
+```
+
+![Splunk showing 4662 events, all from the DC's own machine account](images/stage1-detection.png)
+*Every 4662 event in the window comes from `WIN-AUHSOB0S2PO$` — the DC's own machine account — never from the account running the LDAP recon*
+
+**The result:** the pipeline itself is proven — but running `[adsisearcher]` reads as `Administrator`, directly on the DC, never once generated a 4662 event, even after specifying explicit properties to load. Only the DC's own internal housekeeping (routine, automatic, unrelated to the recon) shows up.
 
 ### 🗺️ MITRE ATT&CK
 
@@ -74,7 +90,9 @@ Using built-in PowerShell, I enumerated domain users, groups, computers, and —
 
 ### 🕳️ Detection Gap — Stage 1
 
-Recon detection here is behavioral, not signature-based — there's no single "smoking gun" event, only abnormal volume. My static threshold (>50 objects/min) catches an aggressive enumeration burst but could miss a low-and-slow attacker pulling a handful of objects per hour. A production detection would need baselining of normal per-user LDAP activity rather than a fixed threshold.
+This turned into the most instructive part of the lab. Windows Directory Service auditing (4662) is reliable for **writes** — I confirmed that instantly with a GPO change. But it's inconsistent for **read/enumeration** operations, especially when run by a highly privileged account directly on the DC console itself: the access-check path for local, privileged reads doesn't appear to route through the same audit trigger as a lower-privileged or remote query would.
+
+In other words: I built and validated a complete, correctly-configured detection pipeline, and it still couldn't see this specific recon technique. That's not a config mistake — it's a real, known blind spot in native Windows auditing. It's exactly why production environments layer in purpose-built tooling for this (e.g., Microsoft Defender for Identity, honeytoken accounts, or UEBA-style baselining) instead of relying on Security event logs alone for catching LDAP recon.
 
 ---
 
@@ -90,7 +108,8 @@ GetUserSPNs.py lab.local/user:password -dc-ip 10.0.0.10 -request
 john --wordlist=rockyou.txt kerberoast_hash.txt
 ```
 
-*Kerberoasting attack*
+![Kerberoasting attack in Kali](images/stage2-kerberoast-attack.png)
+*Requesting a TGS ticket and cracking it offline with John the Ripper*
 
 ### 🔵 The Detection (Blue)
 
@@ -102,7 +121,8 @@ index=wineventlog EventCode=4769 Ticket_Encryption_Type=0x17
 | where count > 5
 ```
 
-*Splunk Kerberoast detection*
+![Splunk Kerberoast detection](images/stage2-detection.png)
+*Splunk flags 4769 requests using weak RC4 encryption*
 
 ### 🗺️ MITRE ATT&CK
 
@@ -127,7 +147,8 @@ With sufficient privileges, an attacker impersonates a Domain Controller and abu
 secretsdump.py lab.local/user:password@10.0.0.10 -just-dc
 ```
 
-*DCSync attack*
+![DCSync attack via secretsdump](images/stage3-dcsync-attack.png)
+*Impersonating a Domain Controller to dump all domain credential hashes*
 
 ### 🔵 The Detection (Blue)
 
@@ -139,7 +160,8 @@ index=wineventlog EventCode=4662 Properties="*1131f6aa-9c07-11d1-f79f-00c04fc2dc
 | stats count by Account_Name, Client_Address
 ```
 
-*Splunk DCSync detection*
+![Splunk DCSync detection](images/stage3-detection.png)
+*Splunk flags a non-DC account requesting directory replication*
 
 ### 🗺️ MITRE ATT&CK
 
