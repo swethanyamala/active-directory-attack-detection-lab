@@ -118,11 +118,12 @@ Requesting the ticket generates Event ID 4769. The tell: a 4769 with RC4 encrypt
 ```spl
 index=wineventlog EventCode=4769 Ticket_Encryption_Type=0x17
 | stats count by Account_Name, Service_Name, Client_Address
-| where count > 5
 ```
 
 ![Splunk Kerberoast detection](images/stage2-detection.png)
-*Splunk flags 4769 requests using weak RC4 encryption*
+*Splunk flags the 4769 request from `swetha@LAB.LOCAL` for `svc-sql` using weak RC4 encryption — captured live from a real Kerberoasting run against the DC*
+
+> **Note:** In a production SOC environment, this detection would typically add `| where count > 5` to filter out normal ticket renewal noise and only flag bulk/automated enumeration (e.g., Rubeus spraying multiple SPNs). A single request, as shown here, is still worth investigating but carries lower confidence on its own.
 
 ### 🗺️ MITRE ATT&CK
 
