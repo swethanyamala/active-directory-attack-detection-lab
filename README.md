@@ -145,24 +145,25 @@ With sufficient privileges, an attacker impersonates a Domain Controller and abu
 
 ```bash
 # Impersonate a DC and replicate all credential data
-secretsdump.py lab.local/user:password@10.0.0.10 -just-dc
+secretsdump.py lab.local/swetha:password@192.168.56.107 -just-dc
 ```
 
 ![DCSync attack via secretsdump](images/stage3-dcsync-attack.png)
-*Impersonating a Domain Controller to dump all domain credential hashes*
+*Impersonating a Domain Controller to dump all domain credential hashes — including Administrator, krbtgt, and svc-sql (hash values redacted)*
 
 ### 🔵 The Detection (Blue)
 
 DCSync generates Event ID 4662 tagged with the directory replication GUID (`1131f6aa-9c07-11d1-f79f-00c04fc2dcd2`). The red flag: replication requested by an account that is **not** a Domain Controller — legitimate replication only happens DC-to-DC.
 
 ```spl
-index=wineventlog EventCode=4662 Properties="*1131f6aa-9c07-11d1-f79f-00c04fc2dcd2*"
-| search Account_Name!="*$"
-| stats count by Account_Name, Client_Address
+index=wineventlog EventCode=4662 "1131f6aa-9c07-11d1-f79f-00c04fc2dcd2"
+| table _time Account_Name Client_Address
 ```
 
 ![Splunk DCSync detection](images/stage3-detection.png)
-*Splunk flags a non-DC account requesting directory replication*
+*Splunk flags `swetha@LAB.LOCAL` — a non-DC account — requesting directory replication, captured live from a real DCSync run against the DC*
+
+> **Note:** For this lab, `swetha` was deliberately granted `Replicating Directory Changes` and `Replicating Directory Changes All` rights on the domain object to simulate a real-world misconfiguration scenario — a regular user or service account that was over-permissioned, whether by mistake or scope creep over time. This is a common finding in actual AD environments: replication rights granted broadly (e.g., to a helpdesk or backup service account) create a DCSync path without anyone ever touching Domain Admins group membership.
 
 ### 🗺️ MITRE ATT&CK
 
@@ -172,43 +173,5 @@ index=wineventlog EventCode=4662 Properties="*1131f6aa-9c07-11d1-f79f-00c04fc2dc
 
 ### 🕳️ Detection Gap — Stage 3
 
-The detection relies on filtering out legitimate DC machine accounts (`Account_Name!="*$"`). If an attacker compromises an actual DC, this detection is blind to it. Stronger defense pairs this query with restricting replication rights (only DCs should hold `DS-Replication-Get-Changes`) and alerting on any *new grant* of that permission.
-
----
-
-## 🧩 The Full Picture — Defense in Depth
-
-| Kill Chain Stage | Detected? | Key Event ID | Where I'd Improve |
-|---|---|---|---|
-| 1. Recon (LDAP enumeration) | ✅ | 4662 (volume) | Behavioral baselining vs. static threshold |
-| 2. Kerberoasting | ✅ | 4769 (RC4) | Enforce AES-only + gMSA |
-| 3. DCSync | ✅ | 4662 (replication GUID) | Restrict replication rights |
-
-**Key takeaway:** no single detection stops a determined attacker — but catching them at multiple stages means even if one detection fails, another fires. That layered approach is the core of real SOC defense.
-
----
-
-## 🔭 What's Next
-
-- Deploy Splunk Universal Forwarder on the domain-joined endpoint for real-time log shipping (currently manual log pulls)
-- Add a fourth stage: lateral movement detection (e.g., Pass-the-Hash / Pass-the-Ticket)
-- Convert detections into Splunk correlation searches with scheduled alerting
-- Write up detections as portable Sigma rules
-
----
-
-## 📚 References
-
-- [Impacket](https://github.com/fortra/impacket) — Kerberoasting & DCSync tooling
-- [AD-Attack-Defense](https://github.com/infosecn1nja/AD-Attack-Defense) — Event ID detection mappings
-- [MITRE ATT&CK](https://attack.mitre.org/) — technique references
-
----
-
-## 👤 Author
-
-**Swetha Nyamala** — SOC / Blue Team Analyst
-📍 St. Louis, MO
-🔗 [LinkedIn](#) · [GitHub](https://github.com/swethanyamala)
-
+The detection relies on filtering out legitimate DC machine accounts in a broader production query (`Account_Name!="*$"`). If an attacker compromises an actual DC, this detection is blind to it. More importantly, this detection only fires *after* the damage is done — the real control is preventing unauthorized replication rights in the first place: regularly auditing `DS-Replication-Get-Changes` / `DS-Replication-Get-Changes-All` grants on the domain object, since in this lab that misconfiguration (a regular user account holding replication rights) is exactly what made DCSync possible.
 *Blue team detection lab built with purple-team methodology — simulating adversary techniques to build and validate SOC detections.*
