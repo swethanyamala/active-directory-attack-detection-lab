@@ -172,9 +172,7 @@ index=wineventlog EventCode=4662 "1131f6aa-9c07-11d1-f79f-00c04fc2dcd2"
 | Credential Access | OS Credential Dumping: DCSync | T1003.006 |
 
 ### 🕳️ Detection Gap — Stage 3
-
 The detection relies on filtering out legitimate DC machine accounts in a broader production query (`Account_Name!="*$"`). If an attacker compromises an actual DC, this detection is blind to it. More importantly, this detection only fires *after* the damage is done — the real control is preventing unauthorized replication rights in the first place: regularly auditing `DS-Replication-Get-Changes` / `DS-Replication-Get-Changes-All` grants on the domain object, since in this lab that misconfiguration (a regular user account holding replication rights) is exactly what made DCSync possible.
-*Blue team detection lab built with purple-team methodology — simulating adversary techniques to build and validate SOC detections.*
 
 ---
 
@@ -187,6 +185,15 @@ The detection relies on filtering out legitimate DC machine accounts in a broade
 | 3. DCSync | ✅ | 4662 (replication GUID) | Restrict replication rights |
 
 **Key takeaway:** no single detection stops a determined attacker — but catching them at multiple stages means even if one detection fails, another fires. That layered approach is the core of real SOC defense.
+---
+
+## 📊 Detection Coverage
+
+| Attack Technique | Event ID | SPL Query Written | Status |
+|---|---|---|---|
+| LDAP Recon | 4662 | ✅ | ⚠️ Detection Gap (documented) |
+| Kerberoasting | 4769 | ✅ | ✅ Detected |
+| DCSync | 4662 (replication GUID) | ✅ | ✅ Detected |
 
 ---
 
@@ -211,6 +218,6 @@ The detection relies on filtering out legitimate DC machine accounts in a broade
 
 **Swetha Nyamala** — SOC / Blue Team Analyst
 📍 St. Louis, MO
- [GitHub](https://github.com/swethanyamala)
+ 🔗 [LinkedIn](https://www.linkedin.com/in/swetha-nyamala-518345319) · [GitHub](https://github.com/swethanyamala)
 
 *Blue team detection lab built with purple-team methodology — simulating adversary techniques to build and validate SOC detections.*
