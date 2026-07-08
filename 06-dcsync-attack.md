@@ -10,7 +10,7 @@ DCSync is an Active Directory attack technique (MITRE ATT&CK T1003.006) where an
 
 ## Lab Setup for This Attack
 - Attacker machine: Kali Linux (192.168.56.30)
-- Target: AD-DomainController ( (192.168.56.10)) - lab.local domain
+- Target: AD-DomainController  (192.168.56.10)- lab.local domain
 - Account used: swetha - deliberately granted replication rights to simulate a real-world misconfiguration (e.g. an over-permissioned helpdesk or backup service account, not a Domain Admin)
 
 ## Attack Steps
