@@ -44,7 +44,7 @@ Instead of one isolated attack, this lab shows layered detection across a full i
 | Splunk | SIEM (log collection + detection) |
 | VMware Workstation | Virtualization (isolated host-only network) |
 
-![Lab network diagram](images/network-diagram.png)
+
 *Isolated host-only network: DC, endpoint, and attacker VM*
 
 ---
