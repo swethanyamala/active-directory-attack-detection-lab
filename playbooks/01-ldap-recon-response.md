@@ -4,7 +4,7 @@
 **Severity:** Low–Medium (informational unless followed by Stage 2/3 activity)
 **Trigger:** Splunk alert on Event ID 4662 volume anomaly, or manual hunt finding `[adsisearcher]`/LDAP enumeration patterns in PowerShell logging (Event ID 4104).
 
-> Note: as documented in the main README, native 4662 auditing has a known blind spot for privileged local reads — this playbook assumes the activity was surfaced via PowerShell Script Block Logging, a SIEM correlation rule, or manual threat hunting rather than 4662 alone.
+> Note: as documented in the main README, native 4662 auditing has a known blind spot for privileged local reads this playbook assumes the activity was surfaced via PowerShell Script Block Logging, a SIEM correlation rule, or manual threat hunting rather than 4662 alone.
 
 ## 1. Triage
 - Identify the source host and the account that ran the enumeration.
