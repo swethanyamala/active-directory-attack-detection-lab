@@ -59,5 +59,5 @@ Build a small Active Directory lab to later simulate and detect attacks (Kerbero
 
 ## Troubleshooting
 - Initial confusion between OS type/version settings in VM creation (corrected Windows 11 → Windows Server 2022 for DC)
-- RAM constraints (8GB total) — running multiple VMs simultaneously causes slowdowns; shut down VMs not actively in use
+- RAM constraints (8GB total) — running multiple VMs simultaneously causes slowdowns; shut down VMs not actively in use.
 
