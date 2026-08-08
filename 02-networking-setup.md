@@ -22,4 +22,3 @@
 ## Next Steps
 - Join AD-Client-Win10 to lab.local domain
 - Verify computer object appears in Active Directory Users and Computers
-
