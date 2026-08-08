@@ -14,3 +14,5 @@
 - Forward Windows Event Logs + Sysmon from both VMs to Splunk
 - Write detection queries in Splunk for Kerberoasting (Event ID 4769)
 
+  
+
