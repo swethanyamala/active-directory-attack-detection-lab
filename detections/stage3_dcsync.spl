@@ -1,0 +1,23 @@
+```
+Stage 3 — DCSync Detection
+Event ID 4662 tagged with directory replication GUID (1131f6aa-9c07-11d1-f79f-00c04fc2dcd2)
+
+Lab query:
+```
+
+index=wineventlog EventCode=4662 "1131f6aa-9c07-11d1-f79f-00c04fc2dcd2"
+| table _time Account_Name Client_Address
+
+```
+Production-tuned variant (excludes legitimate DC-to-DC replication noise):
+```
+
+index=wineventlog EventCode=4662 "1131f6aa-9c07-11d1-f79f-00c04fc2dcd2"
+Account_Name!="*$"
+| table _time Account_Name Client_Address
+
+```
+This detection fires only after replication has occurred. The durable control is
+auditing DS-Replication-Get-Changes / DS-Replication-Get-Changes-All grants on
+the domain object — see README Stage 3 "Detection Gap" for the full writeup.
+```

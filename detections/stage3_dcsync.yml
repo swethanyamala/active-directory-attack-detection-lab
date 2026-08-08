@@ -1,0 +1,41 @@
+title: DCSync — Unauthorized Directory Replication Request (Event 4662)
+id: 47946885-e72f-458e-b011-0b1ae8b2e969
+status: experimental
+description: |
+  Detects directory replication requests (DRSUAPI GetNCChanges) tagged with the
+  replication GUIDs, originating from an account that is not a Domain Controller
+  machine account. Legitimate AD replication only occurs DC-to-DC; a non-DC
+  account requesting replication is a strong indicator of a DCSync attack
+  (e.g., via Impacket's secretsdump.py -just-dc), which can exfiltrate every
+  account's password hash including krbtgt.
+author: Swetha Nyamala
+date: 2026-08-08
+references:
+  - https://github.com/swethanyamala/active-directory-attack-detection-lab
+tags:
+  - attack.credential_access
+  - attack.t1003.006
+logsource:
+  product: windows
+  service: security
+  definition: 'Requires "Audit Directory Service Access" (Success) on the domain object.'
+detection:
+  selection:
+    EventID: 4662
+    Properties|contains:
+      - '1131f6aa-9c07-11d1-f79f-00c04fc2dcd2'
+  filter_dc_machine_accounts:
+    Account_Name|endswith: '$'
+  condition: selection and not filter_dc_machine_accounts
+falsepositives:
+  - Legitimate Domain Controllers performing normal replication (filtered via machine-account suffix)
+  - Azure AD Connect or other authorized directory-sync service accounts (should be explicitly allow-listed, not exempted by naming pattern alone)
+level: critical
+notes: |
+  Detection gap: if an attacker fully compromises an actual DC, this rule is
+  blind to it, since the traffic would appear to originate from a legitimate
+  DC account. This detection also fires only after replication has already
+  occurred — the primary control is auditing and restricting
+  DS-Replication-Get-Changes / DS-Replication-Get-Changes-All grants on the
+  domain object so unauthorized accounts never hold replication rights in the
+  first place. See README "Detection Gap — Stage 3."

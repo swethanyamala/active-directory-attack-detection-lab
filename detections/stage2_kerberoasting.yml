@@ -1,0 +1,38 @@
+title: Kerberoasting via RC4-Encrypted Service Ticket Request (Event 4769)
+id: 66fda5a9-6b6b-45ee-99c7-f26ca1076fc2
+status: experimental
+description: |
+  Detects Kerberos service ticket (TGS) requests using RC4 encryption
+  (Ticket_Encryption_Type 0x17) instead of AES. Modern, properly hardened
+  domains should only issue AES-encrypted service tickets, so RC4 requests
+  are a strong indicator of Kerberoasting (e.g., via Impacket's GetUserSPNs
+  or Rubeus), since RC4-encrypted tickets are far cheaper to crack offline.
+author: Swetha Nyamala
+date: 2026-08-08
+references:
+  - https://github.com/swethanyamala/active-directory-attack-detection-lab
+tags:
+  - attack.credential_access
+  - attack.t1558.003
+logsource:
+  product: windows
+  service: security
+  definition: 'Default Kerberos service ticket auditing (Event ID 4769) enabled on the Domain Controller.'
+detection:
+  selection:
+    EventID: 4769
+    Ticket_Encryption_Type: '0x17'
+  condition: selection
+falsepositives:
+  - Legacy applications or devices that only support RC4 (should be inventoried and migrated)
+  - Misconfigured service accounts without AES support enabled
+level: high
+fields:
+  - Account_Name
+  - Service_Name
+  - Client_Address
+notes: |
+  Production tuning: add `| stats count by Account_Name, Service_Name, Client_Address
+  | where count > 5` to suppress normal ticket-renewal noise and prioritize
+  bulk/automated enumeration (e.g., Rubeus spraying multiple SPNs). A single
+  request is still worth investigating but carries lower confidence alone.

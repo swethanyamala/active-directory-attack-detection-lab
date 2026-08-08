@@ -1,0 +1,40 @@
+title: LDAP Directory Enumeration via ADSISearcher (Event 4662)
+id: c5b5a98f-a6d2-4973-8abd-c18e5c68fa4e
+status: experimental
+description: |
+  Detects potential LDAP enumeration of Active Directory objects (users, groups,
+  SPN-bearing service accounts) via Windows Directory Service Access auditing
+  (Event ID 4662). Requires "Audit Directory Service Access" enabled and a SACL
+  set on the domain object for the principals being audited.
+
+  KNOWN GAP (documented in this lab): local, high-privilege reads issued directly
+  from the Domain Controller console (e.g., an Administrator running
+  [adsisearcher] locally) were NOT observed to reliably generate 4662 events,
+  even with a correctly configured audit pipeline. This rule reliably catches
+  remote/lower-privileged enumeration and directory writes, but should not be
+  relied on as the sole control for LDAP recon from a DC console. Pair with
+  Microsoft Defender for Identity, honeytoken accounts, or UEBA baselining.
+author: Swetha Nyamala
+date: 2026-08-08
+references:
+  - https://github.com/swethanyamala/active-directory-attack-detection-lab
+tags:
+  - attack.discovery
+  - attack.t1087
+  - attack.t1069
+  - attack.t1482
+logsource:
+  product: windows
+  service: security
+  definition: 'Requires "Audit Directory Service Access" (Success) and a SACL on the domain object covering Read/List operations.'
+detection:
+  selection:
+    EventID: 4662
+  filter_dc_self_activity:
+    SubjectUserName|endswith: '$'
+  condition: selection and not filter_dc_self_activity
+falsepositives:
+  - Legitimate directory-aware applications and scripts performing bulk reads
+  - Backup, monitoring, or provisioning service accounts
+  - GPO and directory write operations by administrators
+level: medium

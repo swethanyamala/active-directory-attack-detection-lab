@@ -1,0 +1,27 @@
+```
+Stage 1 — LDAP Enumeration Detection
+Event ID 4662 (Directory Service Access)
+Requires: "Audit Directory Service Access" (Success) + SACL on the domain object
+
+Lab query (host-specific):
+```
+
+index=* host="WIN-AUHSOB0S2PO" EventCode=4662
+| table _time Account_Name SubjectUserName ObjectName Accesses
+
+```
+Generalized production variant (filters out DC machine-account self-activity noise):
+```
+
+index=wineventlog EventCode=4662
+| where NOT match(SubjectUserName, "\$$")
+| stats count by _time, SubjectUserName, ObjectName, Accesses
+| sort - count
+
+```
+KNOWN GAP: local/high-privilege LDAP reads issued directly from the DC console were
+not observed to reliably generate 4662 events in this lab, even with a correctly
+configured audit pipeline. Treat this query as covering remote/lower-privileged
+enumeration and directory writes, not a complete recon detection. See README
+"Detection Gap — Stage 1" for full writeup.
+```

@@ -1,0 +1,60 @@
+<svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="900" height="480" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="450" y="32" text-anchor="middle" font-size="18" font-weight="bold" fill="#1e2327">Lab Network — Isolated VMware Host-Only Segment</text>
+
+  <!-- Host-only network boundary -->
+  <rect x="40" y="60" width="820" height="300" rx="12" fill="#f6f8fa" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="60" y="85" font-size="13" fill="#57606a">VMware Workstation — Host-Only Network (192.168.56.0/24)</text>
+
+  <!-- Domain Controller -->
+  <rect x="90" y="120" width="200" height="110" rx="8" fill="#dbeafe" stroke="#1d4ed8" stroke-width="2"/>
+  <text x="190" y="150" text-anchor="middle" font-size="14" font-weight="bold" fill="#1d4ed8">Domain Controller</text>
+  <text x="190" y="170" text-anchor="middle" font-size="12" fill="#1e293b">Windows Server 2019</text>
+  <text x="190" y="188" text-anchor="middle" font-size="12" fill="#1e293b">Active Directory + DNS</text>
+  <text x="190" y="206" text-anchor="middle" font-size="11" fill="#475569">10.0.0.10</text>
+
+  <!-- Endpoint -->
+  <rect x="350" y="120" width="200" height="110" rx="8" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+  <text x="450" y="150" text-anchor="middle" font-size="14" font-weight="bold" fill="#15803d">Domain-Joined Endpoint</text>
+  <text x="450" y="170" text-anchor="middle" font-size="12" fill="#1e293b">Windows 10</text>
+  <text x="450" y="188" text-anchor="middle" font-size="12" fill="#1e293b">Recon staging point</text>
+  <text x="450" y="206" text-anchor="middle" font-size="11" fill="#475569">Domain member</text>
+
+  <!-- Attacker -->
+  <rect x="610" y="120" width="200" height="110" rx="8" fill="#fee2e2" stroke="#b91c1c" stroke-width="2"/>
+  <text x="710" y="150" text-anchor="middle" font-size="14" font-weight="bold" fill="#b91c1c">Attacker Machine</text>
+  <text x="710" y="170" text-anchor="middle" font-size="12" fill="#1e293b">Kali Linux</text>
+  <text x="710" y="188" text-anchor="middle" font-size="12" fill="#1e293b">Impacket / John the Ripper</text>
+  <text x="710" y="206" text-anchor="middle" font-size="11" fill="#475569">192.168.56.107</text>
+
+  <!-- Splunk indexer -->
+  <rect x="330" y="290" width="240" height="90" rx="8" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+  <text x="450" y="320" text-anchor="middle" font-size="14" font-weight="bold" fill="#b45309">Splunk SIEM</text>
+  <text x="450" y="340" text-anchor="middle" font-size="12" fill="#1e293b">Log collection + detection</text>
+  <text x="450" y="358" text-anchor="middle" font-size="11" fill="#475569">Windows Security Event Logs</text>
+
+  <!-- Connections: attack traffic -->
+  <line x1="610" y1="175" x2="290" y2="175" stroke="#b91c1c" stroke-width="2" marker-end="url(#arrowRed)"/>
+  <text x="450" y="115" text-anchor="middle" font-size="11" fill="#b91c1c">attack traffic (LDAP, Kerberos, DRSUAPI)</text>
+
+  <!-- Connections: log forwarding -->
+  <line x1="190" y1="230" x2="410" y2="290" stroke="#57606a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowGray)"/>
+  <line x1="450" y1="230" x2="450" y2="290" stroke="#57606a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowGray)"/>
+  <text x="270" y="270" text-anchor="middle" font-size="10" fill="#57606a">event logs</text>
+
+  <!-- Arrow defs -->
+  <defs>
+    <marker id="arrowRed" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#b91c1c"/>
+    </marker>
+    <marker id="arrowGray" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#57606a"/>
+    </marker>
+  </defs>
+
+  <!-- Legend -->
+  <text x="60" y="430" font-size="12" fill="#1e2327">— red arrow: simulated attack traffic (recon, Kerberoasting, DCSync)</text>
+  <text x="60" y="450" font-size="12" fill="#1e2327">- - gray dashed: Windows Security Event Log forwarding to Splunk</text>
+</svg>

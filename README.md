@@ -6,6 +6,12 @@ A blue team detection lab built with purple team methodology: I simulated a real
 
 ---
 
+##  Skills Demonstrated
+
+`Splunk SPL` · `Windows Security Event Log Analysis (4662, 4769)` · `PowerShell / LDAP (ADSISearcher)` · `Impacket (GetUserSPNs, secretsdump)` · `Kerberoasting & DCSync Analysis` · `MITRE ATT&CK Mapping` · `Sigma Rule Authoring` · `Active Directory Hardening (gMSA, AES enforcement, replication rights auditing)` · `VMware Lab Build (Windows Server 2019, Windows 10, Kali Linux)`
+
+---
+
 ##  Overview
 
 This project follows an attacker through three stages of the kill chain against an enterprise Active Directory domain — and detects them at every step.
@@ -44,8 +50,21 @@ Instead of one isolated attack, this lab shows layered detection across a full i
 | Splunk | SIEM (log collection + detection) |
 | VMware Workstation | Virtualization (isolated host-only network) |
 
+![Lab architecture diagram](images/lab-architecture-diagram.svg)
+*Isolated host-only network: DC, endpoint, and attacker VM, with logs forwarded to the Splunk indexer*
 
-*Isolated host-only network: DC, endpoint, and attacker VM*
+---
+
+##  Lab Build Documentation
+
+Step-by-step build docs behind this writeup, in order:
+
+1. [Domain Controller Setup](01-domain-controller-setup.md)
+2. [Networking Setup](02-networking-setup.md)
+3. [Domain Join](03-domain-join.md)
+4. [Vulnerable Service Account Configuration](04-vulnerable-service-account.md)
+5. [Kerberoasting Attack](05-kerberoasting-attack.md)
+6. [DCSync Attack](06-dcsync-attack.md)
 
 ---
 
@@ -197,12 +216,24 @@ The detection relies on filtering out legitimate DC machine accounts in a broade
 
 ---
 
+##  Detections as Code
+
+The SPL queries above are also written up as portable [Sigma rules](https://github.com/SigmaHQ/sigma) and standalone `.spl` files in [`/detections`](detections/), so they can be dropped into Splunk as saved searches or converted to other SIEM formats:
+
+| Stage | Sigma Rule | SPL File |
+|---|---|---|
+| 1. LDAP Recon | [stage1_ldap_recon.yml](detections/stage1_ldap_recon.yml) | [stage1_ldap_recon.spl](detections/stage1_ldap_recon.spl) |
+| 2. Kerberoasting | [stage2_kerberoasting.yml](detections/stage2_kerberoasting.yml) | [stage2_kerberoasting.spl](detections/stage2_kerberoasting.spl) |
+| 3. DCSync | [stage3_dcsync.yml](detections/stage3_dcsync.yml) | [stage3_dcsync.spl](detections/stage3_dcsync.spl) |
+
+---
+
 ##  What's Next
 
 - Deploy Splunk Universal Forwarder on the domain-joined endpoint for real-time log shipping (currently manual log pulls)
 - Add a fourth stage: lateral movement detection (e.g., Pass-the-Hash / Pass-the-Ticket)
 - Convert detections into Splunk correlation searches with scheduled alerting
-- Write up detections as portable Sigma rules
+- Record a short walkthrough video of one attack-to-detection loop
 
 ---
 
@@ -211,6 +242,7 @@ The detection relies on filtering out legitimate DC machine accounts in a broade
 - [Impacket](https://github.com/fortra/impacket) — Kerberoasting & DCSync tooling
 - [AD-Attack-Defense](https://github.com/infosecn1nja/AD-Attack-Defense) — Event ID detection mappings
 - [MITRE ATT&CK](https://attack.mitre.org/) — technique references
+- [Sigma](https://github.com/SigmaHQ/sigma) — generic signature format for detection rules
 
 ---
 

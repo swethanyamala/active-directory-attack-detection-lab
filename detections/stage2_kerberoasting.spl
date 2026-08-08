@@ -1,0 +1,22 @@
+```
+Stage 2 — Kerberoasting Detection
+Event ID 4769 (Kerberos Service Ticket Request), RC4 encryption (0x17)
+
+Lab query:
+```
+
+index=wineventlog EventCode=4769 Ticket_Encryption_Type=0x17
+| stats count by Account_Name, Service_Name, Client_Address
+
+```
+Production-tuned variant (suppresses normal renewal noise):
+```
+
+index=wineventlog EventCode=4769 Ticket_Encryption_Type=0x17
+| stats count by Account_Name, Service_Name, Client_Address
+| where count > 5
+
+```
+A single RC4 request (as captured live in this lab) is still worth investigating
+but carries lower confidence on its own — see README Stage 2 note.
+```
