@@ -228,6 +228,30 @@ The SPL queries above are also written up as portable [Sigma rules](https://gith
 
 ---
 
+##  Sample Logs
+
+Annotated, illustrative log excerpts for each stage — reconstructed from the exact fields and query logic used in this lab (not raw exports), with inline comments explaining what makes each event suspicious: [`/sample_logs`](sample_logs/)
+
+| Stage | Sample |
+|---|---|
+| 1. LDAP Recon | [stage1_ldap_recon_sample.log](sample_logs/stage1_ldap_recon_sample.log) |
+| 2. Kerberoasting | [stage2_kerberoasting_sample.log](sample_logs/stage2_kerberoasting_sample.log) |
+| 3. DCSync | [stage3_dcsync_sample.log](sample_logs/stage3_dcsync_sample.log) |
+
+---
+
+##  Incident Response Playbooks
+
+What to actually do when each detection fires, from triage through containment and recovery: [`/playbooks`](playbooks/)
+
+| Stage | Playbook |
+|---|---|
+| 1. LDAP Recon | [01-ldap-recon-response.md](playbooks/01-ldap-recon-response.md) |
+| 2. Kerberoasting | [02-kerberoasting-response.md](playbooks/02-kerberoasting-response.md) |
+| 3. DCSync | [03-dcsync-response.md](playbooks/03-dcsync-response.md) |
+
+---
+
 ##  References
 
 - [Impacket](https://github.com/fortra/impacket) — Kerberoasting & DCSync tooling

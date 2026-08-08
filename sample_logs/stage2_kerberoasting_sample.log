@@ -1,0 +1,23 @@
+# Illustrative log excerpt — reconstructed from the field values and query logic
+# documented in this lab's README (Stage 2). Field names and event structure
+# match real Windows Security Event Log / Splunk output for Event ID 4769;
+# this file is provided as an annotated teaching example, not a raw export.
+
+EventCode=4769
+_time=2026-08-08T02:14:07
+Account_Name=swetha@LAB.LOCAL
+Service_Name=svc-sql
+Client_Address=::ffff:192.168.56.107
+Ticket_Encryption_Type=0x17          # <-- RC4 (0x17). Modern domains should only issue AES (0x11/0x12). RC4 = crackable offline.
+Ticket_Options=0x40810000
+Failure_Code=0x0
+
+# --- Why this is suspicious ---
+# 1. Ticket_Encryption_Type=0x17 (RC4) is the key indicator — this domain
+#    supports AES, so an RC4 ticket suggests the requester deliberately
+#    downgraded the request (a hallmark of Impacket's GetUserSPNs / Rubeus).
+# 2. Client_Address (192.168.56.107) is the Kali attacker VM's IP in this lab,
+#    not a normal domain-joined endpoint.
+# 3. A single request like this is investigatable but low-confidence alone;
+#    production tuning adds `| where count > 5` to catch bulk/automated
+#    SPN spraying rather than one-off renewals. See detections/stage2_kerberoasting.spl.

@@ -1,0 +1,27 @@
+# Illustrative log excerpt — reconstructed from the field values and query logic
+# documented in this lab's README (Stage 3). Field names and event structure
+# match real Windows Security Event Log / Splunk output for Event ID 4662;
+# this file is provided as an annotated teaching example, not a raw export.
+
+EventCode=4662
+_time=2026-08-08T02:31:52
+Account_Name=swetha
+Client_Address=192.168.56.107
+ObjectServer=DS
+ObjectType=domainDNS
+Properties={1131f6aa-9c07-11d1-f79f-00c04fc2dcd2}   # <-- DS-Replication-Get-Changes-All GUID
+Accesses=Control Access
+
+# --- Why this is critical ---
+# 1. The Properties field contains the directory replication GUID
+#    (1131f6aa-9c07-11d1-f79f-00c04fc2dcd2) — this GUID is only ever
+#    supposed to appear on requests from Domain Controllers replicating
+#    with each other.
+# 2. Account_Name=swetha does NOT end in "$", meaning this is a regular
+#    user account, not a machine account — legitimate DC-to-DC replication
+#    always comes from a computer account (e.g., WIN-AUHSOB0S2PO$).
+# 3. A non-DC account requesting this GUID is the signature of a DCSync
+#    attack (Impacket secretsdump.py -just-dc) — the account is impersonating
+#    a Domain Controller to pull every credential hash in the domain,
+#    including krbtgt. Treat as critical/domain-compromise immediately —
+#    see playbooks/03-dcsync-response.md.

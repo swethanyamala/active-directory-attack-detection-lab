@@ -1,0 +1,26 @@
+# Illustrative log excerpt — reconstructed from the field values and query logic
+# documented in this lab's README (Stage 1). Field names match real Windows
+# Security Event Log / Splunk output for Event ID 4662; provided as an
+# annotated teaching example, not a raw export.
+#
+# NOTE: this example intentionally shows the DOCUMENTED DETECTION GAP from
+# the lab — the recon activity itself does NOT appear here, because native
+# 4662 auditing did not capture it when run as a privileged account locally
+# on the DC (see README "Detection Gap - Stage 1" and playbooks/01-ldap-recon-response.md
+# for why PowerShell Script Block Logging or EDR telemetry is needed instead).
+
+EventCode=4662
+_time=2026-08-08T01:58:03
+Account_Name=WIN-AUHSOB0S2PO$        # <-- DC's own machine account (routine housekeeping)
+SubjectUserName=WIN-AUHSOB0S2PO$
+ObjectName=CN=Policies,CN=System,DC=lab,DC=local
+Accesses=Write Property
+
+# --- What this demonstrates ---
+# Every 4662 event observed during the actual LDAP recon test window came
+# from the DC's own machine account doing routine internal writes — never
+# from the account that ran the [adsisearcher] enumeration queries. This is
+# the evidence behind the lab's documented finding: local, privileged LDAP
+# reads on the DC console do not reliably trigger 4662, even with a fully
+# and correctly configured audit pipeline (Audit Directory Service Access +
+# SACL + Splunk Universal Forwarder, all validated working via this event).
