@@ -34,4 +34,3 @@ Kerberoasting works by cracking the password offline — weak passwords crack qu
 - Add Kali Linux to adlab internal network (192.168.56.30)
 - Run Kerberoasting attack from Kali using Impacket
 - Capture and crack the svc-sql ticket
-
