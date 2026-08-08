@@ -66,3 +66,5 @@ If this were a real company:
 - Write detection query for Event ID 4769 (Kerberoasting indicator)
 - Verify alert fires when attack is repeated
 
+  
+
