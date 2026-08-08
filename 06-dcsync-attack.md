@@ -57,4 +57,6 @@ The detection relies on filtering out legitimate DC machine accounts in a broade
 - Monitor Event ID 4662 for replication requests from non-DC accounts
 - Rotate the krbtgt password (twice, per Microsoft guidance) if DCSync is suspected
 
+  
+
 
