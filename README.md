@@ -228,15 +228,6 @@ The SPL queries above are also written up as portable [Sigma rules](https://gith
 
 ---
 
-##  What's Next
-
-- Deploy Splunk Universal Forwarder on the domain-joined endpoint for real-time log shipping (currently manual log pulls)
-- Add a fourth stage: lateral movement detection (e.g., Pass-the-Hash / Pass-the-Ticket)
-- Convert detections into Splunk correlation searches with scheduled alerting
-- Record a short walkthrough video of one attack-to-detection loop
-
----
-
 ##  References
 
 - [Impacket](https://github.com/fortra/impacket) — Kerberoasting & DCSync tooling
