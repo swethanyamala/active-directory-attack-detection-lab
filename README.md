@@ -1,4 +1,4 @@
-#  Active Directory Attack Detection Lab — Full Kill Chain
+# Active Directory Attack Detection Lab — Full Kill Chain
 
 A blue team detection lab built with purple team methodology: I simulated a realistic three-stage Active Directory intrusion — **Reconnaissance → Credential Access → Domain Compromise** — and detected each stage from the SOC analyst seat using Splunk SIEM and Windows Event Logs, mapped to MITRE ATT&CK with documented detection gaps.
 
@@ -6,13 +6,13 @@ A blue team detection lab built with purple team methodology: I simulated a real
 
 ---
 
-##  Skills Demonstrated
+## Skills Demonstrated
 
-`Splunk SPL` · `Windows Security Event Log Analysis (4662, 4769)` · `PowerShell / LDAP (ADSISearcher)` · `Impacket (GetUserSPNs, secretsdump)` · `Kerberoasting & DCSync Analysis` · `MITRE ATT&CK Mapping` · `Sigma Rule Authoring` · `Active Directory Hardening (gMSA, AES enforcement, replication rights auditing)` · `VMware Lab Build (Windows Server 2019, Windows 10, Kali Linux)`
+`Splunk SPL` · `Windows Security Event Log Analysis (4662, 4769)` · `PowerShell / LDAP (ADSISearcher)` · `Impacket (GetUserSPNs, secretsdump)` · `Kerberoasting & DCSync Analysis` · `MITRE ATT&CK Mapping` · `Sigma Rule Authoring` · `Active Directory Hardening (gMSA, AES enforcement, replication rights auditing)` · `VirtualBox Lab Build (Windows Server 2022, Windows 10, Kali Linux)`
 
 ---
 
-##  Overview
+## Overview
 
 This project follows an attacker through three stages of the kill chain against an enterprise Active Directory domain — and detects them at every step.
 
@@ -26,11 +26,11 @@ Instead of one isolated attack, this lab shows layered detection across a full i
 
 **Why this matters:** catching an attacker at recon means stopping them before damage. Catching them at DCSync means the domain is already fully compromised. Detecting all three stages demonstrates defense in depth — exactly how a real SOC operates: no single control is expected to catch everything.
 
-> ⚠️ **Disclaimer:** All activity was performed in an isolated VMware lab for educational purposes only. No real systems, networks, or individuals were targeted. All IPs are private lab addresses.
+> ⚠️ **Disclaimer:** All activity was performed in an isolated VirtualBox lab for educational purposes only. No real systems, networks, or individuals were targeted. All IPs are private lab addresses.
 
 ---
 
-##  Objectives
+## Objectives
 
 - Build a realistic AD domain (Domain Controller + endpoint + attacker machine)
 - Simulate a three-stage intrusion: recon → credential theft → domain compromise
@@ -40,22 +40,22 @@ Instead of one isolated attack, this lab shows layered detection across a full i
 
 ---
 
-##  Lab Environment
+## Lab Environment
 
 | Component | Role |
 |---|---|
-| Windows Server 2019 | Domain Controller (Active Directory) |
+| Windows Server 2022 | Domain Controller (Active Directory) |
 | Windows 10 | Domain-joined endpoint |
 | Kali Linux | Attacker machine |
 | Splunk | SIEM (log collection + detection) |
-| VMware Workstation | Virtualization (isolated host-only network) |
+| VirtualBox | Virtualization (isolated host-only network) |
 
 ![Lab architecture diagram](images/lab-architecture-diagram.svg)
 *Isolated host-only network: DC, endpoint, and attacker VM, with logs forwarded to the Splunk indexer*
 
 ---
 
-##  Lab Build Documentation
+## Lab Build Documentation
 
 Step-by-step build docs behind this writeup, in order:
 
@@ -68,9 +68,9 @@ Step-by-step build docs behind this writeup, in order:
 
 ---
 
-##  Stage 1 — Reconnaissance (LDAP Enumeration)
+## Stage 1 — Reconnaissance (LDAP Enumeration)
 
-###  The Attack 
+### The Attack
 
 Before attacking, adversaries map the environment. Simulating an attacker who has already landed on a domain-joined machine, I performed reconnaissance using native Windows LDAP queries — a "living off the land" technique that requires no downloaded tools and blends into normal domain traffic.
 
@@ -87,7 +87,7 @@ Using built-in PowerShell, I enumerated domain users, groups, computers, and —
 ![LDAP recon enumeration](images/stage1-ldap-recon.png)
 *Enumerating domain users and SPN accounts via native LDAP queries*
 
-###  The Detection 
+### The Detection
 
 The theory: LDAP reads generate Event ID 4662 when a SACL (audit rule) is set on the queried objects. I configured this end-to-end — enabled "Audit Directory Service Access" (locally and via the Default Domain Controllers GPO), set a SACL on the domain object for `Everyone`/Success covering Read/List operations, and confirmed the full pipeline (audit policy → SACL → Splunk Universal Forwarder) was working by watching an unrelated 4662 event (a Group Policy write) land in Splunk within seconds.
 
@@ -101,13 +101,13 @@ index=* host="WIN-AUHSOB0S2PO" EventCode=4662
 
 **The result:** the pipeline itself is proven — but running `[adsisearcher]` reads as `Administrator`, directly on the DC, never once generated a 4662 event, even after specifying explicit properties to load. Only the DC's own internal housekeeping (routine, automatic, unrelated to the recon) shows up.
 
-###  MITRE ATT&CK
+### MITRE ATT&CK
 
 | Tactic | Technique | ID |
 |---|---|---|
 | Discovery | Account / Group / Domain Trust Discovery | T1087 / T1069 / T1482 |
 
-###  Detection Gap — Stage 1
+### Detection Gap — Stage 1
 
 This turned into the most instructive part of the lab. Windows Directory Service auditing (4662) is reliable for **writes** — I confirmed that instantly with a GPO change. But it's inconsistent for **read/enumeration** operations, especially when run by a highly privileged account directly on the DC console itself: the access-check path for local, privileged reads doesn't appear to route through the same audit trigger as a lower-privileged or remote query would.
 
@@ -115,9 +115,9 @@ In other words: I built and validated a complete, correctly-configured detection
 
 ---
 
-##  Stage 2 — Credential Access (Kerberoasting)
+## Stage 2 — Credential Access (Kerberoasting)
 
-###  The Attack 
+### The Attack
 
 Any authenticated domain user can request a service ticket (TGS) for an account with an SPN. That ticket is encrypted with the service account's password hash — which can be cracked offline, with no lockout risk.
 
@@ -130,7 +130,7 @@ john --wordlist=rockyou.txt kerberoast_hash.txt
 ![Kerberoasting attack in Kali](images/stage2-kerberoast-attack.png)
 *Requesting a TGS ticket and cracking it offline with John the Ripper*
 
-###  The Detection 
+### The Detection
 
 Requesting the ticket generates Event ID 4769. The tell: a 4769 with RC4 encryption (`0x17`) — modern domains should be using AES, so RC4 requests are suspicious.
 
@@ -144,7 +144,7 @@ index=wineventlog EventCode=4769 Ticket_Encryption_Type=0x17
 
 > **Note:** In a production SOC environment, this detection would typically add `| where count > 5` to filter out normal ticket renewal noise and only flag bulk/automated enumeration (e.g., Rubeus spraying multiple SPNs). A single request, as shown here, is still worth investigating but carries lower confidence on its own.
 
-###  MITRE ATT&CK
+### MITRE ATT&CK
 
 | Tactic | Technique | ID |
 |---|---|---|
@@ -156,15 +156,15 @@ RC4 being permitted is what made the ticket crackable offline. Enforcing AES-onl
 
 ---
 
-##  Stage 3 — Domain Compromise (DCSync)
+## Stage 3 — Domain Compromise (DCSync)
 
-###  The Attack (Red)
+### The Attack (Red)
 
 With sufficient privileges, an attacker impersonates a Domain Controller and abuses the DRSUAPI replication protocol to request every account's password hash — including `krbtgt`. The `krbtgt` hash enables Golden Tickets: forged tickets for any user that never expire. This is effectively permanent domain compromise.
 
 ```bash
 # Impersonate a DC and replicate all credential data
-secretsdump.py lab.local/swetha:password@192.168.56.107 -just-dc
+secretsdump.py lab.local/swetha:password@192.168.56.10 -just-dc
 ```
 
 ![DCSync attack via secretsdump](images/stage3-dcsync-attack.png)
@@ -184,18 +184,18 @@ index=wineventlog EventCode=4662 "1131f6aa-9c07-11d1-f79f-00c04fc2dcd2"
 
 > **Note:** For this lab, `swetha` was deliberately granted `Replicating Directory Changes` and `Replicating Directory Changes All` rights on the domain object to simulate a real-world misconfiguration scenario — a regular user or service account that was over-permissioned, whether by mistake or scope creep over time. This is a common finding in actual AD environments: replication rights granted broadly (e.g., to a helpdesk or backup service account) create a DCSync path without anyone ever touching Domain Admins group membership.
 
-###  MITRE ATT&CK
+### MITRE ATT&CK
 
 | Tactic | Technique | ID |
 |---|---|---|
 | Credential Access | OS Credential Dumping: DCSync | T1003.006 |
 
-###  Detection Gap — Stage 3
+### Detection Gap — Stage 3
 The detection relies on filtering out legitimate DC machine accounts in a broader production query (`Account_Name!="*$"`). If an attacker compromises an actual DC, this detection is blind to it. More importantly, this detection only fires *after* the damage is done — the real control is preventing unauthorized replication rights in the first place: regularly auditing `DS-Replication-Get-Changes` / `DS-Replication-Get-Changes-All` grants on the domain object, since in this lab that misconfiguration (a regular user account holding replication rights) is exactly what made DCSync possible.
 
 ---
 
-##  The Full Picture — Defense in Depth
+## The Full Picture — Defense in Depth
 
 | Kill Chain Stage | Detected? | Key Event ID | Where I'd Improve |
 |---|---|---|---|
@@ -206,7 +206,7 @@ The detection relies on filtering out legitimate DC machine accounts in a broade
 **Key takeaway:** No single detection stops a determined attacker — but catching them at multiple stages means even if one detection fails, another fires. That layered approach is the core of real SOC defense.
 ---
 
-##  Detection Coverage
+## Detection Coverage
 
 | Attack Technique | Event ID | SPL Query Written | Status |
 |---|---|---|---|
@@ -216,7 +216,7 @@ The detection relies on filtering out legitimate DC machine accounts in a broade
 
 ---
 
-##  Detections as Code
+## Detections as Code
 
 The SPL queries above are also written up as portable [Sigma rules](https://github.com/SigmaHQ/sigma) and standalone `.spl` files in [`/detections`](detections/), so they can be dropped into Splunk as saved searches or converted to other SIEM formats:
 
@@ -228,7 +228,7 @@ The SPL queries above are also written up as portable [Sigma rules](https://gith
 
 ---
 
-##  Sample Logs
+## Sample Logs
 
 Annotated, illustrative log excerpts for each stage — reconstructed from the exact fields and query logic used in this lab (not raw exports), with inline comments explaining what makes each event suspicious: [`/sample_logs`](sample_logs/)
 
@@ -240,7 +240,7 @@ Annotated, illustrative log excerpts for each stage — reconstructed from the e
 
 ---
 
-##  Incident Response Playbooks
+## Incident Response Playbooks
 
 What to actually do when each detection fires, from triage through containment and recovery: [`/playbooks`](playbooks/)
 
@@ -252,7 +252,7 @@ What to actually do when each detection fires, from triage through containment a
 
 ---
 
-##  References
+## References
 
 - [Impacket](https://github.com/fortra/impacket) — Kerberoasting & DCSync tooling
 - [AD-Attack-Defense](https://github.com/infosecn1nja/AD-Attack-Defense) — Event ID detection mappings
@@ -261,7 +261,7 @@ What to actually do when each detection fires, from triage through containment a
 
 ---
 
-##  Author
+## Author
 
 **Swetha Nyamala** — SOC / Blue Team Analyst
 📍 St. Louis, MO

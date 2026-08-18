@@ -14,8 +14,8 @@ Generalized production variant (filters out DC machine-account self-activity noi
 ```
 
 index=wineventlog EventCode=4662
-| where NOT match(SubjectUserName, "\$$")
-| stats count by _time, SubjectUserName, ObjectName, Accesses
+| where NOT match(Account_Name, "\$$")
+| stats count by _time, Account_Name, ObjectName, Accesses
 | sort - count
 
 ```

